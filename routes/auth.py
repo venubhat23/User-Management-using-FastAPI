@@ -5,9 +5,11 @@ from passlib.context import CryptContext
 import hashlib
 from jose import jwt
 from datetime import datetime,timedelta
-from fastapi.security import OAuth2PasswordBearer
+# from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+from typing import Annotated
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 SECRET_KEY="mysecretkey"
 ALGORITHM="HS256"
@@ -16,7 +18,7 @@ router = APIRouter()
 
 pwd_context=CryptContext(schemes=["bcrypt"],deprecated="auto")
 
-
+security = HTTPBearer()
 class users(BaseModel):
     name:str
     email:str
@@ -45,12 +47,21 @@ def create_token(data:dict):
     return jwt.encode(to_encode,SECRET_KEY,algorithm=ALGORITHM)
 
     
-def verify_token(token: str = Depends(oauth2_scheme)):
+# def verify_token(token: Annotated[str, Depends(oauth2_scheme)]):
+#     try:
+#         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+#         return payload
+#     except:
+#         raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
     except:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 #################################################
 
@@ -100,6 +111,7 @@ def login(user:LoginRequest):
     finally:
         cursor.close()
         db.close()
+
 
 @router.get("/profile")
 def profile(user=Depends(verify_token)):
