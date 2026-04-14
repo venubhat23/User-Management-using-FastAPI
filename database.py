@@ -1,8 +1,6 @@
 import os
 import mysql.connector
-from dotenv import load_dotenv   # <-- you need this import
-
-# Load environment variables from .env file
+from dotenv import load_dotenv   
 load_dotenv()
 
 def get_db():
