@@ -36,6 +36,8 @@ def hash_password(password):
     sha_password = hashlib.sha256(password.encode()).hexdigest()
 
     return pwd_context.hash(sha_password)
+
+print(hash_password("admin@123"))
 def verify_password(plain: str, hashed: str) -> bool:
     sha_password = hashlib.sha256(plain.encode()).hexdigest()
     return pwd_context.verify(sha_password, hashed)
@@ -100,14 +102,14 @@ def login(user:LoginRequest):
             raise HTTPException(status_code=401,detail="User not exist")
         if not verify_password(user.password,existing_user["password"]):
             raise HTTPException(status_code=401,detail="Invalid Password")
-        token=create_token({"sub":user.email})
+        token=create_token({"sub":user.email,"role": existing_user["role"]})
         return {"message":"Login Successful","access_token":token}
 
     except HTTPException:
         raise
 
     except Exception as e :
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) 
     finally:
         cursor.close()
         db.close()
@@ -119,3 +121,11 @@ def profile(user=Depends(verify_token)):
         "message": "Protected route",
         "user": user
     }
+
+@router.delete("/admin/delete-user/{user_id}")
+def delete_user(user_id: int, user=Depends(verify_token)):
+    
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    return {"message": "User deleted by admin"}
